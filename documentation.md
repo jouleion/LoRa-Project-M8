@@ -20,6 +20,23 @@ In the github tasks
 | Vizualize our own foreign transmitter on the map | Could  |
 
 
-
+# Types used in the project
+    signal = {
+        eui_of_sensor
+        name_of_sensor
+        long
+        lat
+        eui_of_gateway
+        time of flight
+        altitude
+    }
+    
+    type gateway{
+        long
+        lat
+        eui_gateway
+        name_of_gateway
+        altitude
+    }
 
 

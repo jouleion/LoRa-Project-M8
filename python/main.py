@@ -42,6 +42,25 @@ def cross_reference_with_csv(msg):
     gate_way_locations = pd.read_csv('data/gateway_locations.csv')
     sensor_locations = pd.read_csv('data/sensor_locations.csv')
 
+    signal = {
+        eui_of_sensor: "",
+        name_of_sensor
+        long
+        lat
+        eui_of_gateway
+        time of flight
+        altitude
+    }
+
+    type gateway{
+        long
+        lat
+        eui_gateway
+        name_of_gateway
+        altitude
+    }
+
+
 
     # Get sensor data
     sensor = sensor_locations[sensor_locations['Sensor_Eui'] == msg['device_eui']].iloc[0]
