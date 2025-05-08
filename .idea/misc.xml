@@ -3,5 +3,5 @@
   <component name="Black">
     <option name="sdkName" value="Pipenv (pythonProject)" />
   </component>
-  <component name="ProjectRootManager" version="2" project-jdk-name="Pipenv (LoRa Project)" project-jdk-type="Python SDK" />
+  <component name="ProjectRootManager" version="2" project-jdk-name="Pipenv (LoRa-Project-M8)" project-jdk-type="Python SDK" />
 </project>
