@@ -32,32 +32,48 @@ class Mapper:
             Input('interval-component', 'n_intervals')
         )(self.update_map)
 
-    def update_map(self, n_intervals):
-        # For demo: move the first sensor randomly
-        if self.sensors:
-            new_lat, new_lon = self.sensors[0].get_long_lat()
-        else:
-            new_lat, new_lon = self.location_center
-
-        updated_data = pd.DataFrame({"lat": [new_lat], "lon": [new_lon]})
-
-        # Use scatter_map and map_style!
-        fig = px.scatter_map(
-            updated_data,
-            lat="lat",
-            lon="lon",
-            zoom=9,
-            center={"lat": self.location_center[0], "lon": self.location_center[1]}
-        )
-        fig.update_layout(
-            map_style="open-street-map",
-            margin={"r": 0, "t": 0, "l": 0, "b": 0}
-        )
-        return fig
 
     def update(self, sensors, gateways):
         self.sensors = sensors
         self.gateways = gateways
+
+        # add a small random offset 0.001 to the sensors and gateways
+        for s in self.sensors:
+            s.lat += np.random.uniform(-0.001, 0.001)
+            s.long += np.random.uniform(-0.001, 0.001)
+        for g in self.gateways:
+            g.lat += np.random.uniform(-0.001, 0.001)
+            g.long += np.random.uniform(-0.001, 0.001)
+
+    def update_map(self):
+        # Collect all points
+        data = []
+        for s in self.sensors:
+            lat, lon = s.get_long_lat()
+            data.append({"lat": lat, "lon": lon, "type": "Sensor", "name": s.get_sensor_id()})
+        for g in self.gateways:
+            lat, lon = g.get_long_lat()
+            data.append({"lat": lat, "lon": lon, "type": "Gateway", "name": g.get_gateway_id()})
+
+        df = pd.DataFrame(data)
+
+        # If no data, show center
+        if df.empty:
+            df = pd.DataFrame([{"lat": self.location_center[0], "lon": self.location_center[1], "type": "Center",
+                                "name": "Center"}])
+
+        fig = px.scatter_map(
+            df,
+            lat="lat",
+            lon="lon",
+            color="type",  # Color by type (Sensor/Gateway)
+            hover_name="name",  # Show name on hover
+            zoom=13,
+            center={"lat": self.location_center[0], "lon": self.location_center[1]},
+            map_style="open-street-map"
+        )
+        fig.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0})
+        return fig
 
     def run(self):
         self.app.run(debug=True, port=8050)  # Use .run() instead of .run_server()
@@ -68,12 +84,12 @@ if __name__ == "__main__":
 
     # Example sensor and gateway data
     sensors = [
-        Sensor("Sensor1", "EUI1", "Gateway1", 52.0, 4.0, 0.5),
-        Sensor("Sensor2", "EUI2", "Gateway2", 52.1, 4.1, 0.6)
+        Sensor("Sensor1", "EUI1", "Gateway1", 52.233, 6.860, 0.5),
+        Sensor("Sensor2", "EUI2", "Gateway2", 52.232, 6.868, 0.6)
     ]
     gateways = [
-        Gateway("Gateway1", "EUI1", 52.0, 4.0, 10),
-        Gateway("Gateway2", "EUI2", 52.1, 4.1, 20)
+        Gateway("Gateway1", "EUI1", 52.236, 6.860, 10),
+        Gateway("Gateway2", "EUI2", 52.231, 6.868, 20)
     ]
 
     mapper = Mapper()

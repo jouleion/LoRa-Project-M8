@@ -174,6 +174,8 @@ def main():
 
             # show the sensors on a leaflet map
             mapper.update(sensors, gateways)
+            # update the map
+            mapper.update_map()
 
 
 
