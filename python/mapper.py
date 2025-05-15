@@ -45,7 +45,7 @@ class Mapper:
             g.lat += np.random.uniform(-0.001, 0.001)
             g.long += np.random.uniform(-0.001, 0.001)
 
-    def update_map(self):
+    def update_map(self, n_intervals):
         # Collect all points
         data = []
         for s in self.sensors:
