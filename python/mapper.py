@@ -11,7 +11,7 @@ class Mapper:
         self.gateways = []
 
         self.app = dash.Dash(__name__)
-        self.location_center = (52.2313, 6.8686)  # abraham lebeboer park center
+        self.location_center = (52.236, 6.86)  # abraham lebeboer park center
         self.initial_data = pd.DataFrame({"lat": [self.location_center[0]], "lon": [self.location_center[1]]})
 
         self.app.layout = html.Div([
@@ -37,28 +37,24 @@ class Mapper:
         self.sensors = sensors
         self.gateways = gateways
 
-        # add a small random offset 0.001 to the sensors and gateways
-        for s in self.sensors:
-            s.lat += np.random.uniform(-0.001, 0.001)
-            s.long += np.random.uniform(-0.001, 0.001)
-        for g in self.gateways:
-            g.lat += np.random.uniform(-0.001, 0.001)
-            g.long += np.random.uniform(-0.001, 0.001)
-
     def update_map(self, n_intervals):
+
         # Collect all points
         data = []
         for s in self.sensors:
-            lat, lon = s.get_long_lat()
+            lat = s.get_lat()
+            lon = s.get_long()
             data.append({"lat": lat, "lon": lon, "type": "Sensor", "name": s.get_sensor_id()})
         for g in self.gateways:
-            lat, lon = g.get_long_lat()
+            lat = g.get_lat()
+            lon = g.get_long()
             data.append({"lat": lat, "lon": lon, "type": "Gateway", "name": g.get_gateway_id()})
 
         df = pd.DataFrame(data)
 
         # If no data, show center
         if df.empty:
+            print("\n\n Not getting any long lat data, showing center\n\n")
             df = pd.DataFrame([{"lat": self.location_center[0], "lon": self.location_center[1], "type": "Center",
                                 "name": "Center"}])
 
@@ -68,7 +64,7 @@ class Mapper:
             lon="lon",
             color="type",  # Color by type (Sensor/Gateway)
             hover_name="name",  # Show name on hover
-            zoom=13,
+            zoom=14,
             center={"lat": self.location_center[0], "lon": self.location_center[1]},
             map_style="open-street-map"
         )

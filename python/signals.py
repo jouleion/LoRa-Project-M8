@@ -17,8 +17,11 @@ class Sensor:
         self.time_of_flight = time_of_flight
         self.nr_of_packets = 0
 
-    def get_long_lat(self):
-        return self.long, self.lat
+    def get_long(self):
+        return self.long
+
+    def get_lat(self):
+        return self.lat
 
     def get_sensor_id(self):
         return self.eui_of_sensor
@@ -46,8 +49,11 @@ class Gateway:
         self.lat = lat
         self.altitude = altitude
 
-    def get_long_lat(self):
-        return self.long, self.lat
+    def get_long(self):
+        return self.long
+
+    def get_lat(self):
+        return self.lat
 
     def get_gateway_id(self):
         return self.eui_gateway
