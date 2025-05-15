@@ -44,13 +44,31 @@ class Mapper:
         for s in self.sensors:
             lat = s.get_lat()
             lon = s.get_long()
-            data.append({"lat": lat, "lon": lon, "type": "Sensor", "name": s.get_sensor_id()})
+            type = "Sensor"
+            if not s.known:
+                type = "Unknown Sensor"
+            data.append({
+                "lat": lat,
+                "lon": lon,
+                "type": type,
+                "eui": s.get_sensor_id(),
+                "name": s.name_of_sensor if s.has_sensor_name() else "Unknown",
+            })
         for g in self.gateways:
             lat = g.get_lat()
             lon = g.get_long()
-            data.append({"lat": lat, "lon": lon, "type": "Gateway", "name": g.get_gateway_id()})
+            data.append({
+                "lat": lat,
+                "lon": lon,
+                "type": "Gateway",
+                "eui": g.get_gateway_id(),
+                "name": g.name_of_gateway,
+                "altitude": g.altitude,
+            })
+
 
         df = pd.DataFrame(data)
+
 
         # If no data, show center
         if df.empty:
