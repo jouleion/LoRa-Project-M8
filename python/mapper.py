@@ -17,7 +17,7 @@ class Mapper:
         self.app.layout = html.Div([
             dcc.Graph(
                 id='live-map',
-                style={"width": "100vw", "height": "100vh"}
+                style={"width": "95vw", "height": "100vh"}
             ),
             dcc.Interval(
                 id='interval-component',
@@ -54,7 +54,7 @@ class Mapper:
 
         # If no data, show center
         if df.empty:
-            print("\n\n Not getting any long lat data, showing center\n\n")
+            print("[Mapper]: no data to map")
             df = pd.DataFrame([{"lat": self.location_center[0], "lon": self.location_center[1], "type": "Center",
                                 "name": "Center"}])
 

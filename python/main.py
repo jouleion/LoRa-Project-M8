@@ -12,18 +12,22 @@ import threading
 
 
 
-def handle_message(sensors, gateways, msg, sensor_data):
-    print("Received packet with rssi: %d." % msg['rssi'])
-    print(msg)
+def handle_message(sensors, gateways, msg, sensor_data, muting=False):
+    if not muting:
+        print("[Parser]: Received packet with rssi: %d." % msg['rssi'])
+    if not muting:
+        print(msg)
     if 'device_eui' in msg:
-        print("This is a known device!")
-        print("Device name: ", msg['device_name'])
+        if not muting:
+            print("[Parser]: This is a known device!")
+            print("[Parser]: Device name: ", msg['device_name'])
 
         # check if device_euid is in the csv file
 
 
         if msg['device_eui'] in sensor_data['Sensor_Eui'].values:
-            print("Device EUI found in CSV file!")
+            if not muting:
+                print("[Parser]: Device EUI found in CSV file!")
 
             # get sensor eui and gateway euid
             sensor_eui = msg['device_eui']
@@ -44,16 +48,30 @@ def handle_message(sensors, gateways, msg, sensor_data):
                 )
                 sensors.append(sensor)
                 # print in green
-                print("\033[92mAdded new sensor to list\033[0m")
+                print("[Parser]: \033[92mAdded new sensor to list\033[0m")
+
+                # create a new gateway object if needed
+                gateway = next((g for g in gateways if g.get_gateway_id() == gateway_eui), None)
+                if gateway is None:
+                    gateway = Gateway(
+                        'gateway name could go here',
+                        gateway_eui,
+                        sensor_data["St_X"][sensor_data['Sensor_Eui'] == sensor_eui].values[0],
+                        sensor_data["St_Y"][sensor_data['Sensor_Eui'] == sensor_eui].values[0],
+                        0
+                    )
+                    gateways.append(gateway)
+                    print("[Parser]: \033[92mAdded new gateway to list\033[0m")
+
+
             else:
                 sensor.nr_of_packets += 1
-                print("Sensor already in list, incrementing packet count")
+                if not muting:
+                    print("[Parser]: Sensor already in list, incrementing packet count")
         else:
-            print("Device EUI not found in CSV file!")
-            # check if the sensor is in the list
+            if not muting:
+                print("[Parser]: Device EUI not found in CSV file!")
 
-
-    print()
 
 def websocket_handler(sensors, gateways, sensor_data, mapper):
     running = True
@@ -68,19 +86,19 @@ def websocket_handler(sensors, gateways, sensor_data, mapper):
             try:
                 # Decode the message
                 msg = json.loads(msg)
-                handle_message(sensors, gateways, msg, sensor_data)
+                handle_message(sensors, gateways, msg, sensor_data, muting=True)
+
                 # show the sensors on a leaflet map
-                print("just handled message")
                 mapper.update(sensors, gateways)
 
             except json.JSONDecodeError:
-                print("Failed to decode json, assuming next packet will be ok...")
+                print("[Parser]: Failed to decode json, assuming next packet will be ok...")
                 pass
 
             except Exception as e:
                 # Assume something went wrong and stop receiving
-                print("Could not parse the message")
-                print("Error:", e)
+                print("[Parser]: Could not parse the message")
+                print("[Parser]: Error:", e)
                 break
 
             # Increment the packet count
@@ -105,8 +123,10 @@ def main():
         args=(sensors, gateways, sensor_data, mapper)
     )
     websocket_thread.start()
+    print("[Main]: Websocket thread started")
 
     # And start the server on port 8050. Do this in the main thread
+    print("[Main]: Starting mapper server on port 8050")
     mapper.app.run(debug=True, port=8050)
 
 
