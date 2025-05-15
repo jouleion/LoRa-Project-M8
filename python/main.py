@@ -140,7 +140,10 @@ def main():
     num_of_packets = 0
     sensors = []
     gateways = []
+
+    # init the mapper, and start the server on port 8050
     mapper = Mapper()
+    mapper.app.run(debug=True, port=8050)
 
     sensor_data = pd.read_csv('data/sensor_locations.csv')
     sensor_data['Sensor_Eui'] = sensor_data['Sensor_Eui'].astype(str).str.replace(":", "")
