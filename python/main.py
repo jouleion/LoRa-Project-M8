@@ -1,7 +1,7 @@
 # Fetch LoRa Signals
 
 # own script imports
-from signals import Sensor, Gateway
+from signals import Signal, Sensor, Gateway
 from mapper import Mapper
 
 # library imports
@@ -29,48 +29,51 @@ def handle_message(sensors, gateways, msg, sensor_data, muting=False):
             if not muting:
                 print("[Parser]: Device EUI found in CSV file!")
 
-            # get sensor eui and gateway euid
-            sensor_eui = msg['device_eui']
-            gateway_eui = msg['gateway'].replace(":", "")
-
-            # check if theres a sensor with the same eui and gatewate eui in the list
-            sensor = next((s for s in sensors if s.get_sensor_id() == sensor_eui and s.get_gateway_id() == gateway_eui), None)
-
-            # add a new sensor object to the list
-            if sensor is None:
-                sensor = Sensor(
-                    msg['device_name'],
-                    sensor_eui,
-                    gateway_eui,
-                    sensor_data["St_X"][sensor_data['Sensor_Eui'] == sensor_eui].values[0],
-                    sensor_data["St_Y"][sensor_data['Sensor_Eui'] == sensor_eui].values[0],
-                    0
-                )
-                sensors.append(sensor)
-                # print in green
-                print("[Parser]: \033[92mAdded new sensor to list\033[0m")
-
-                # create a new gateway object if needed
-                gateway = next((g for g in gateways if g.get_gateway_id() == gateway_eui), None)
-                if gateway is None:
-                    gateway = Gateway(
-                        'gateway name could go here',
-                        gateway_eui,
-                        sensor_data["St_X"][sensor_data['Sensor_Eui'] == sensor_eui].values[0],
-                        sensor_data["St_Y"][sensor_data['Sensor_Eui'] == sensor_eui].values[0],
-                        0
-                    )
-                    gateways.append(gateway)
-                    print("[Parser]: \033[92mAdded new gateway to list\033[0m")
+        # get sensor eui and gateway euid
+        sensor_eui = msg['device_eui']
+        gateway_eui = msg['gateway'].replace(":", "")
 
 
-            else:
-                sensor.nr_of_packets += 1
-                if not muting:
-                    print("[Parser]: Sensor already in list, incrementing packet count")
+
+        lon, lat = 0, 0
+        known = False
+
+        # check if device_euid is in the csv file
+        if msg['device_eui'] in sensor_data['Sensor_Eui'].values:
+            known = True
+            print("Device EUI found in CSV file!")
+            lon = sensor_data["St_X"][sensor_data['Sensor_Eui'] == sensor_eui].values[0],
+            lat = sensor_data["St_Y"][sensor_data['Sensor_Eui'] == sensor_eui].values[0],
+
+
+
+        # check if theres a sensor with the same eui and gatewate eui in the list
+        sensor = next((s for s in sensors if s.get_sensor_id() == sensor_eui), None)
+        incomming_signal = Signal(gateway_eui, msg['rssi'])
+
+        # add a new sensor object to the list
+        if sensor is None:
+            sensor = Sensor(
+                msg['device_name'],
+                known,
+                sensor_eui,
+                lon,
+                lat,
+                0,
+            )
+            sensors.append(sensor)
+            # print in green
+            print("\033[92mAdded new sensor to list\033[0m")
         else:
-            if not muting:
-                print("[Parser]: Device EUI not found in CSV file!")
+            sensor.nr_of_packets += 1
+
+            print("Sensor already in list, incrementing packet count")
+        sensor.add_signal(incomming_signal)
+        print(incomming_signal.distance)
+    else:
+        print("No device EUI found")
+        # check if the sensor is in the list
+
 
 
 def websocket_handler(sensors, gateways, sensor_data, mapper):
