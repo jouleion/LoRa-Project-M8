@@ -10,6 +10,7 @@ class Mapper:
         self.sensors = []
         self.gateways = []
 
+
         self.app = dash.Dash(__name__)
         self.location_center = (52.236, 6.86)  # abraham lebeboer park center
         self.initial_data = pd.DataFrame({"lat": [self.location_center[0]], "lon": [self.location_center[1]]})
@@ -38,8 +39,6 @@ class Mapper:
         self.gateways = gateways
 
     def update_map(self, n_intervals):
-
-        # Collect all points
         data = []
         for s in self.sensors:
             lat = s.get_lat()
@@ -65,27 +64,52 @@ class Mapper:
                 "name": g.name_of_gateway,
                 "altitude": g.altitude,
             })
-
-
         df = pd.DataFrame(data)
-
-
-        # If no data, show center
         if df.empty:
-            print("[Mapper]: no data to map")
-            df = pd.DataFrame([{"lat": self.location_center[0], "lon": self.location_center[1], "type": "Center",
-                                "name": "Center"}])
+            df = pd.DataFrame(
+                [{"lat": self.location_center[0], "lon": self.location_center[1], "type": "Center", "name": "Center"}])
 
-        fig = px.scatter_map(
+        # Create the glow layer (large, semi-transparent)
+        fig = px.scatter_mapbox(
             df,
             lat="lat",
             lon="lon",
-            color="type",  # Color by type (Sensor/Gateway)
-            hover_name="name",  # Show name on hover
+            hover_name="name",
             zoom=14,
             center={"lat": self.location_center[0], "lon": self.location_center[1]},
-            map_style="open-street-map"
+            mapbox_style="carto-darkmatter"
         )
+        # Add the glow effect for all points
+        fig.update_traces(
+            marker=dict(
+                size=12,  # Large size for glow
+                color="white",  # Bright color for glow
+                opacity=0.15,  # Semi-transparent
+                allowoverlap=True,
+            ),
+            selector=dict(mode="markers")
+        )
+
+        # Add a second layer for the core points (smaller, opaque, colored by type)
+        for point_type, color in {"Sensor": "deepskyblue", "Gateway": "lime"}.items():
+            subdf = df[df["type"] == point_type]
+            fig.add_trace(
+                dict(
+                    type="scattermapbox",
+                    lat=subdf["lat"],
+                    lon=subdf["lon"],
+                    mode="markers",
+                    marker=dict(
+                        size=5,
+                        color=color,
+                        opacity=0.9,
+                        allowoverlap=True,
+                    ),
+                    name=point_type,
+                    text=subdf["name"],
+                    hoverinfo="text",
+                )
+            )
         fig.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0})
         return fig
 
