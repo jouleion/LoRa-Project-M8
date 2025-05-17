@@ -26,7 +26,7 @@ def handle_message(sensors, gateways, msg, sensor_data, gateway_data, muting=Fal
         return
 
     # init variables for new sensor
-    lat, lon = 52.236, 6.86
+    lat, lon = 52.2394, 6.8566
     known = False
 
     # check if device_euid is in the csv file
@@ -35,13 +35,13 @@ def handle_message(sensors, gateways, msg, sensor_data, gateway_data, muting=Fal
             print("[Parser]: Unknown device EUI", msg['device_eui'])
 
         # create unkown sensor
-        sensor_name = msg['device_name'] if 'device_name' in msg else ""
+        sensor_name = msg['device_name'] + " (Unknown location)" if 'device_name' in msg else ""
         sensors.append(Sensor(
             sensor_name,
             known,
             msg['device_eui'],
-            lon,
-            lat,
+            lon + random.uniform(-0.00001, 0.00001),
+            lat + random.uniform(-0.00001, 0.00001),
             0,
         ))
         return
