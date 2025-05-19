@@ -10,8 +10,9 @@ class Mapper:
         self.sensors = []
         self.gateways = []
 
+
         self.app = dash.Dash(__name__)
-        self.location_center = (52.236, 6.86)  # abraham lebeboer park center
+        self.location_center = (52.2394, 6.8566)  # abraham lebeboer park center
         self.initial_data = pd.DataFrame({"lat": [self.location_center[0]], "lon": [self.location_center[1]]})
 
         self.app.layout = html.Div([
@@ -38,36 +39,149 @@ class Mapper:
         self.gateways = gateways
 
     def update_map(self, n_intervals):
-
-        # Collect all points
+        # Get the sensor and gateway data
         data = []
         for s in self.sensors:
             lat = s.get_lat()
             lon = s.get_long()
-            data.append({"lat": lat, "lon": lon, "type": "Sensor", "name": s.get_sensor_id()})
+            type = "Sensor"
+            if not s.known:
+                type = "Unknown Sensor"
+            data.append({
+                "lat": lat,
+                "lon": lon,
+                "type": type,
+                "eui": s.get_sensor_id(),
+                "name": s.name_of_sensor if s.has_sensor_name() else "Unknown",
+            })
         for g in self.gateways:
             lat = g.get_lat()
             lon = g.get_long()
-            data.append({"lat": lat, "lon": lon, "type": "Gateway", "name": g.get_gateway_id()})
-
+            data.append({
+                "lat": lat,
+                "lon": lon,
+                "type": "Gateway",
+                "eui": g.get_gateway_id(),
+                "name": g.name_of_gateway,
+                "altitude": g.altitude,
+            })
         df = pd.DataFrame(data)
 
-        # If no data, show center
+        # use a center point as a fallback
         if df.empty:
-            print("[Mapper]: no data to map")
-            df = pd.DataFrame([{"lat": self.location_center[0], "lon": self.location_center[1], "type": "Center",
-                                "name": "Center"}])
+            df = pd.DataFrame(
+                [{"lat": self.location_center[0], "lon": self.location_center[1], "type": "Center", "name": "Center"}])
 
-        fig = px.scatter_map(
+        # Create a scatter mapbox figure
+        fig = px.scatter_mapbox(
             df,
             lat="lat",
             lon="lon",
-            color="type",  # Color by type (Sensor/Gateway)
-            hover_name="name",  # Show name on hover
-            zoom=14,
+            hover_name="name",
+            zoom=15,
             center={"lat": self.location_center[0], "lon": self.location_center[1]},
-            map_style="open-street-map"
+            mapbox_style="carto-darkmatter"
         )
+        # Add a transparent circle below each point
+        fig.update_traces(
+            marker=dict(
+                size=8,  # Large size for glow
+                color="white",  # Bright color for glow
+                opacity=0.2,  # Semi-transparent
+                allowoverlap=True,
+            ),
+            selector=dict(mode="markers")
+        )
+
+        # add extra transpartent circles
+        fig.add_trace(
+            dict(
+                type="scattermapbox",
+                lat=df["lat"],
+                lon=df["lon"],
+                mode="markers",
+                marker=dict(
+                    size=15,
+                    color="white",
+                    opacity=0.05,
+                    allowoverlap=True,
+                ),
+            )
+        )
+
+        # loop through all sensors
+        for sensor in self.sensors:
+            if sensor.known:
+
+                # loop through all signals of the sensor
+                for signal in sensor.raw_signals:
+
+                    # get the gateway eui > get the gateway position
+                    gateway = signal.eui_of_gateway
+                    gateway_pos = next((g for g in self.gateways if g.get_gateway_id() == gateway), None)
+                    if gateway_pos:
+                        line_coordinates = {
+                            "lat": [sensor.get_lat(), gateway_pos.get_lat()],
+                            "lon": [sensor.get_long(), gateway_pos.get_long()]
+                        }
+
+                        # Add a line between the sensor and the gateway
+                        fig.add_trace(
+                            dict(
+                                type="scattermapbox",
+                                lat=line_coordinates["lat"],
+                                lon=line_coordinates["lon"],
+                                mode="lines",
+                                line=dict(
+                                    width=1.5,  # Line width
+                                    color="rgba(0, 255, 0, 0.2)",  # Line color
+                                ),
+                                name=f"Signal to {gateway_pos.name_of_gateway}",
+                            )
+                        )
+
+        # example for line
+        # fig.add_trace(
+        #     dict(
+        #         type="scattermapbox",
+        #         lat=line_coordinates["lat"],
+        #         lon=line_coordinates["lon"],
+        #         mode="lines",
+        #         line=dict(
+        #             width=2,  # Line width
+        #             color="lime",  # Line color
+        #         ),
+        #         name="Connection Line",
+        #     )
+        # )
+
+        # Add a layer for the points
+        for point_type in {"Sensor", "Gateway", "Unknown Sensor"}:
+            subdf = df[df["type"] == point_type]
+            if point_type == "Sensor":
+                color = "lime"
+            elif point_type == "Gateway":
+                color = "aqua"
+            elif point_type == "Unknown Sensor":
+                color = "aquamarine"
+
+            fig.add_trace(
+                dict(
+                    type="scattermapbox",
+                    lat=subdf["lat"],
+                    lon=subdf["lon"],
+                    mode="markers",
+                    marker=dict(
+                        size=5,
+                        color=color,
+                        opacity=0.9,
+                        allowoverlap=True,
+                    ),
+                    name=point_type,
+                    text=subdf["name"],
+                    hoverinfo="text",
+                )
+            )
         fig.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0})
         return fig
 
