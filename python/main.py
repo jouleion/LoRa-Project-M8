@@ -1,4 +1,5 @@
 # Fetch LoRa Signals
+import math
 import random
 
 # own script imports
@@ -14,7 +15,8 @@ import threading
 
 
 def handle_message(sensors, gateways, msg, sensor_data, gateway_data, muting=False):
-    # print message
+    if not muting:
+        print("[Parser]: Received packet with rssi: %d." % msg['rssi'])
     if not muting:
         print("[Parser]: Received message (rssi): %d." % msg['rssi'])
         print(msg)
@@ -34,32 +36,39 @@ def handle_message(sensors, gateways, msg, sensor_data, gateway_data, muting=Fal
         if not muting:
             print("[Parser]: Unknown device EUI", msg['device_eui'])
 
-        # create unkown sensor
-        sensor_name = msg['device_name'] + " (Unknown location)" if 'device_name' in msg else ""
-        sensors.append(Sensor(
-            sensor_name,
-            known,
-            msg['device_eui'],
-            lon + random.uniform(-0.00001, 0.00001),
-            lat + random.uniform(-0.00001, 0.00001),
-            0,
-        ))
-        return
 
     if not muting:
         print("[Parser]: Device found in csv (name): ", msg['device_name'])
 
-    # store sensor eui and gateway euid
+    # get sensor eui and gateway euid
     sensor_eui = msg['device_eui']
     gateway_eui = msg['gateway'].replace(":", "")
-    known = True
 
-    # get the location of known sensor from csv
-    lon = sensor_data["St_X"][sensor_data['Sensor_Eui'] == sensor_eui].values[0]
-    lat = sensor_data["St_Y"][sensor_data['Sensor_Eui'] == sensor_eui].values[0]
 
-    # check if theres a sensor with the same eui in the list
+
+    lon = 0
+    lat = 0
+    known = False
+
+    # check if device_euid is in the csv file
+    if msg['device_eui'] in sensor_data['Sensor_Eui'].values:
+        temp_lon = sensor_data["St_X"][sensor_data['Sensor_Eui'] == sensor_eui].values[0],
+        temp_lat = sensor_data["St_Y"][sensor_data['Sensor_Eui'] == sensor_eui].values[0],
+        print(f'Lon: {temp_lon[0]}')
+        print(f'Lat: {temp_lat[0]}')
+        if (not math.isnan(temp_lon[0])) and (not math.isnan(temp_lon[0])) :
+            known = True
+            lon = temp_lon[0]
+            lat = temp_lat[0]
+        print("Device EUI found in CSV file!")
+
+
+
+
+
+    # check if theres a sensor with the same eui and gatewate eui in the list
     sensor = next((s for s in sensors if s.get_sensor_id() == sensor_eui), None)
+
 
     # if this is a new sensor, add it to the list
     if sensor is None:
@@ -82,7 +91,10 @@ def handle_message(sensors, gateways, msg, sensor_data, gateway_data, muting=Fal
             print("[Parser]: Sensor already in list, incrementing packet count")
 
     # create a new signal for this sensor and add it to the sensor
-    incomming_signal = Signal(gateway_eui, msg['rssi'])
+    gate_lat = gateway_data["latitude"][gateway_data['eui'] == gateway_eui].values[0],
+    gate_lon = gateway_data["longitude"][gateway_data['eui'] == gateway_eui].values[0],
+
+    incomming_signal = Signal(gateway_eui, msg['rssi'], float(gate_lon[0]), float(gate_lat[0]))
     sensor.add_signal(incomming_signal)
 
     if not muting:
@@ -109,6 +121,7 @@ def handle_message(sensors, gateways, msg, sensor_data, gateway_data, muting=Fal
 
             gateways.append(gateway)
             print("[Parser]: \033[92mAdded new gateway to list\033[0m")
+    print()
 
 
 
@@ -126,7 +139,7 @@ def websocket_handler(sensors, gateways, sensor_data, gateway_data, mapper):
             try:
                 # Decode the message
                 msg = json.loads(msg)
-                handle_message(sensors, gateways, msg, sensor_data, gateway_data, muting=True)
+                handle_message(sensors, gateways, msg, sensor_data,gateway_data, muting=False)
 
                 # show the sensors on a leaflet map
                 mapper.update(sensors, gateways)
