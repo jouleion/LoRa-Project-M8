@@ -51,7 +51,7 @@ class Mapper:
         for s in self.sensors:
             # determine position of the sensor and determine the type
             lat = s.get_lat()
-            lon = s.get_long()
+            lon = s.get_lon()
             type = "Sensor"
             if not s.known:
                 type = "Unknown Sensor"
@@ -64,7 +64,7 @@ class Mapper:
             })
         for g in self.gateways:
             lat = g.get_lat()
-            lon = g.get_long()
+            lon = g.get_lon()
             data.append({
                 "lat": lat,
                 "lon": lon,
@@ -131,7 +131,7 @@ class Mapper:
                         # store all the coordinates of the line (2 points, 4 values)
                         line_coordinates = {
                             "lat": [sensor.get_lat(), gateway_pos.get_lat()],
-                            "lon": [sensor.get_long(), gateway_pos.get_long()]
+                            "lon": [sensor.get_lon(), gateway_pos.get_lon()]
                         }
 
                         # Add a line between the sensor and the gateway

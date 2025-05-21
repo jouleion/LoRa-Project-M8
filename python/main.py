@@ -20,7 +20,7 @@ import threading
 import random
 import math
 
-# pip install websockets json pandas dash plotly
+# pip install websockets json pandas dash plotly scipy
 
 def handle_message(sensors, gateways, msg, sensor_data, gateway_data, muting=False):
     # print message
