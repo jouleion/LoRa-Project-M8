@@ -1,5 +1,12 @@
-# Fetch LoRa Signals
-import random
+# This is the main file for running the websocket server and the dynamic mapper to shot the lora traffic around campus.
+# the main file has the websocket and the parser of the lora messages
+# these messages have the info for gates and sensors, and we also make a signal object for each message.
+# this links a sensor to a gateway.
+# the mapper class has a dash app with a plotly map to show the sensors and gateways on a map.
+# we also draw a line between the sensor and the gateway to show the signal.
+# to achieve this we make use of multiple threads, as the mapper and websocket are both blocking calls. This way both can
+# run simultaneously.
+
 
 # own script imports
 from signals import Signal, Sensor, Gateway
@@ -10,8 +17,9 @@ from websockets.sync.client import connect
 import json
 import pandas as pd
 import threading
+import random
 
-
+# pip install websockets json pandas dash plotly
 
 def handle_message(sensors, gateways, msg, sensor_data, gateway_data, muting=False):
     # print message
@@ -146,21 +154,20 @@ def websocket_handler(sensors, gateways, sensor_data, gateway_data, mapper):
 
 
 def main():
-
+    # init the sensors and gateways object list
     sensors = []
     gateways = []
-
 
     # init the mapper
     mapper = Mapper()
 
+    # read the csv files with the sensor and gateway locations
     sensor_data = pd.read_csv('data/sensor_locations.csv')
     sensor_data['Sensor_Eui'] = sensor_data['Sensor_Eui'].astype(str).str.replace(":", "")
-
     gateway_data = pd.read_csv('data/gateway_locations.csv')
 
-
     # start the websocket handler in a new thread
+    # we use the websocket function as the thread, we give it the right arguments for the function
     websocket_thread = threading.Thread(
         target=websocket_handler,
         daemon=True,
@@ -169,17 +176,12 @@ def main():
     websocket_thread.start()
     print("[Main]: Websocket thread started")
 
-    # And start the server on port 8050. Do this in the main thread
+    # And start the map server on port 8050. Do this in the main thread
     print("[Main]: Starting mapper server on port 8050")
     mapper.app.run(debug=True, port=8050)
 
 
-
-
-
-
-
 if __name__ == "__main__":
-    # start main loop
+    # start main call
     main()
 

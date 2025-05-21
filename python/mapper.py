@@ -7,41 +7,49 @@ import numpy as np
 
 class Mapper:
     def __init__(self):
+        # create object lists for the sensors and gateways (optimization possible, just use a pointer instead of a copy)
         self.sensors = []
         self.gateways = []
 
-
+        # create a dash app
         self.app = dash.Dash(__name__)
-        self.location_center = (52.2394, 6.8566)  # abraham lebeboer park center
+        self.location_center = (52.2394, 6.8566)  # campus
         self.initial_data = pd.DataFrame({"lat": [self.location_center[0]], "lon": [self.location_center[1]]})
 
+        # Set up the layout of the app
         self.app.layout = html.Div([
             dcc.Graph(
                 id='live-map',
                 style={"width": "95vw", "height": "100vh"}
             ),
+            # Add an interval component to update the map every 2 seconds
             dcc.Interval(
                 id='interval-component',
-                interval=1 * 1000,
+                interval=2 * 1000,
                 n_intervals=0
             )
         ], style={"margin": "0", "padding": "0"})
 
-        # Register the callback using self.app.callback
+        # Register the callback using self.app.callback.
+        # This sets the function that is run when the interval is triggered
         self.app.callback(
             Output('live-map', 'figure'),
             Input('interval-component', 'n_intervals')
         )(self.update_map)
 
 
+
     def update(self, sensors, gateways):
+        # in this function we update the sensors and gateways
+        # (optimization possible, just use a pointer instead of a copy)
         self.sensors = sensors
         self.gateways = gateways
 
     def update_map(self, n_intervals):
-        # Get the sensor and gateway data
+        # Get the sensor and gateway data (these are points were gonna plot later
         data = []
         for s in self.sensors:
+            # determine position of the sensor and determine the type
             lat = s.get_lat()
             lon = s.get_long()
             type = "Sensor"
@@ -78,9 +86,9 @@ class Mapper:
             lat="lat",
             lon="lon",
             hover_name="name",
-            zoom=15,
+            zoom=15,  # higher number is more zoomed in
             center={"lat": self.location_center[0], "lon": self.location_center[1]},
-            mapbox_style="carto-darkmatter"
+            mapbox_style="carto-darkmatter"  # this is the dark map
         )
         # Add a transparent circle below each point
         fig.update_traces(
@@ -120,6 +128,7 @@ class Mapper:
                     gateway = signal.eui_of_gateway
                     gateway_pos = next((g for g in self.gateways if g.get_gateway_id() == gateway), None)
                     if gateway_pos:
+                        # store all the coordinates of the line (2 points, 4 values)
                         line_coordinates = {
                             "lat": [sensor.get_lat(), gateway_pos.get_lat()],
                             "lon": [sensor.get_long(), gateway_pos.get_long()]
@@ -139,21 +148,6 @@ class Mapper:
                                 name=f"Signal to {gateway_pos.name_of_gateway}",
                             )
                         )
-
-        # example for line
-        # fig.add_trace(
-        #     dict(
-        #         type="scattermapbox",
-        #         lat=line_coordinates["lat"],
-        #         lon=line_coordinates["lon"],
-        #         mode="lines",
-        #         line=dict(
-        #             width=2,  # Line width
-        #             color="lime",  # Line color
-        #         ),
-        #         name="Connection Line",
-        #     )
-        # )
 
         # Add a layer for the points
         for point_type in {"Sensor", "Gateway", "Unknown Sensor"}:
