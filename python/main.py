@@ -34,10 +34,6 @@ def handle_message(sensors, gateways, msg, sensor_data, gateway_data, muting=Fal
             print("[Parser]: No device EUI found")
         return
 
-    # init variables for new sensor
-    lat, lon = 52.2394, 6.8566
-    known = False
-
     # check if device_euid is in the csv file
     if msg['device_eui'] not in sensor_data['Sensor_Eui'].values:
         if not muting:
@@ -50,8 +46,27 @@ def handle_message(sensors, gateways, msg, sensor_data, gateway_data, muting=Fal
     # store sensor eui and gateway euid
     sensor_eui = msg['device_eui']
     gateway_eui = msg['gateway'].replace(":", "")
-    known = True
 
+    #the standard sensor is not known so location to 0,0
+    lon = 0
+    lat = 0
+    known = False
+
+    # check if device_euid is in the csv file
+    if msg['device_eui'] in sensor_data['Sensor_Eui'].values:
+
+        #get its location
+        temp_lon = sensor_data["St_X"][sensor_data['Sensor_Eui'] == sensor_eui].values[0],
+        temp_lat = sensor_data["St_Y"][sensor_data['Sensor_Eui'] == sensor_eui].values[0],
+
+        #some sensor in the csv have no location, check if there is a actual location
+        if (not math.isnan(temp_lon[0])) and (not math.isnan(temp_lon[0])) :
+            #We know the location so known is ture
+            known = True
+            #And set the lon and lat
+            lon = temp_lon[0]
+            lat = temp_lat[0]
+        print("Device EUI found in CSV file!")
 
     # check if theres a sensor with the same eui and gatewate eui in the list
     sensor = next((s for s in sensors if s.get_sensor_id() == sensor_eui), None)
@@ -64,7 +79,6 @@ def handle_message(sensors, gateways, msg, sensor_data, gateway_data, muting=Fal
             sensor_eui,
             lon,
             lat,
-            0,
         )
         sensors.append(sensor)
         # print in green
@@ -80,7 +94,9 @@ def handle_message(sensors, gateways, msg, sensor_data, gateway_data, muting=Fal
     gate_lat = gateway_data["latitude"][gateway_data['eui'] == gateway_eui].values[0],
     gate_lon = gateway_data["longitude"][gateway_data['eui'] == gateway_eui].values[0],
 
+    #create the new signal
     incomming_signal = Signal(gateway_eui, msg['rssi'], float(gate_lon[0]), float(gate_lat[0]))
+    #add the signal to the sensor
     sensor.add_signal(incomming_signal)
 
     if not muting:
