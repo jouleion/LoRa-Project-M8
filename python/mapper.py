@@ -1,6 +1,8 @@
 import dash
 from dash import dcc, html
 from dash.dependencies import Input, Output
+import plotly.graph_objects as go
+
 import plotly.express as px
 import pandas as pd
 import numpy as np
@@ -20,7 +22,10 @@ class Mapper:
         self.app.layout = html.Div([
             dcc.Graph(
                 id='live-map',
-                style={"width": "95vw", "height": "100vh"}
+                style={"width": "95vw", "height": "100vh"},
+                config = {
+                    "displayModeBar": False  # This hides the toolbar!
+                }
             ),
             # Add an interval component to update the map every 2 seconds
             dcc.Interval(
@@ -85,25 +90,32 @@ class Mapper:
                 [{"lat": self.location_center[0], "lon": self.location_center[1], "type": "Center", "name": "Center"}])
 
         # Create a scatter mapbox figure
-        fig = px.scatter_mapbox(
-            df,
-            lat="lat",
-            lon="lon",
-            hover_name="name",
-            hover_data={        },
-            zoom=15,  # higher number is more zoomed in
-            center={"lat": self.location_center[0], "lon": self.location_center[1]},
-            mapbox_style="carto-darkmatter"  # this is the dark map
+        fig = go.Figure()
+        fig.update_layout(
+            mapbox=dict(
+                style="carto-darkmatter",
+                center={"lat": self.location_center[0], "lon": self.location_center[1]},
+                zoom=14
+
+            )
         )
-        # Add a transparent circle below each point
-        fig.update_traces(
-            marker=dict(
-                size=5,  # Large size for glow
-                color="white",  # Bright color for glow
-                opacity=0.2,  # Semi-transparent
-                allowoverlap=True,
-            ),
-            selector=dict(mode="markers")
+
+        # add extra tranparent circles
+        fig.add_trace(
+            dict(
+                type="scattermapbox",
+                lat=df["lat"],
+                lon=df["lon"],
+                mode="markers",
+                marker=dict(
+                    size=6,
+                    color="white",
+                    opacity=0.15,
+                    allowoverlap=True,
+                ),
+                hoverinfo="skip",  # <--- This disables hover for this trace!
+                showlegend=False,
+            )
         )
 
         # add extra transpartent circles
@@ -119,6 +131,8 @@ class Mapper:
                     opacity=0.05,
                     allowoverlap=True,
                 ),
+                hoverinfo="skip",  # <--- This disables hover for this trace!
+                showlegend=False,
             )
         )
 
@@ -129,6 +143,8 @@ class Mapper:
             if point_type == "Sensor":
                 color = "pink"
                 actual_pos_df = df[df["known_lat"].notnull() & df["known_lon"].notnull()]
+                name = df["name"]
+                print("name of sensor in mapper: ",  name)
 
                 fig.add_trace(
                     dict(
@@ -143,8 +159,9 @@ class Mapper:
                             allowoverlap=True,
                         ),
                         name="Actual Position Sensors",
-                        text=actual_pos_df["name"],
+                        text=name,
                         hoverinfo="text",
+
                     )
                 )
 
@@ -202,6 +219,7 @@ class Mapper:
                                     color="rgba(0, 255, 0, 0.2)",  # Line color
                                 ),
                                 name=f"Signal to {gateway_pos.name_of_gateway}",
+                                showlegend=False,  # Hide legend for these lines
                             )
                         )
 
@@ -224,6 +242,7 @@ class Mapper:
                                 color="rgba(255, 198, 208, 0.2)",  # Line color
                             ),
                             name=f"Difference between actual sensor and estimated senors",
+                            showlegend=False,  # Hide legend for these lines
                         )
                     )
 
@@ -256,6 +275,7 @@ class Mapper:
                                     color="rgba(255, 200, 0, 0.15)",  # Line color
                                 ),
                                 name=f"Signal to {gateway_pos.name_of_gateway}",
+                                showlegend=False,  # Hide legend for these lines
                             )
                         )
 
