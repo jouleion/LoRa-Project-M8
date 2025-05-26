@@ -69,7 +69,8 @@ class Sensor:
 
     def get_lon(self):
         return self.lon
-
+    def pos_is_estimated(self):
+        return len(self.avg_signals) >= 3
     def get_lat(self):
         return self.lat
 
