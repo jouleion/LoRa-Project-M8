@@ -90,6 +90,7 @@ class Mapper:
             lat="lat",
             lon="lon",
             hover_name="name",
+            hover_data={        },
             zoom=15,  # higher number is more zoomed in
             center={"lat": self.location_center[0], "lon": self.location_center[1]},
             mapbox_style="carto-darkmatter"  # this is the dark map
@@ -127,23 +128,26 @@ class Mapper:
             size = 3
             if point_type == "Sensor":
                 color = "pink"
+                actual_pos_df = df[df["known_lat"].notnull() & df["known_lon"].notnull()]
+
                 fig.add_trace(
                     dict(
                         type="scattermapbox",
-                        lat=df["known_lat"],
-                        lon=df["known_lon"],
+                        lat=actual_pos_df["known_lat"],
+                        lon=actual_pos_df["known_lon"],
                         mode="markers",
                         marker=dict(
                             size=3,
-                            color=color,
+                            color="pink",
                             opacity=0.9,
                             allowoverlap=True,
                         ),
                         name="Actual Position Sensors",
-                        text=df["name"],
+                        text=actual_pos_df["name"],
                         hoverinfo="text",
                     )
                 )
+
                 color = "lime"
             elif point_type == "Gateway":
                 color = "aqua"
@@ -225,7 +229,7 @@ class Mapper:
                                 mode="lines",
                                 line=dict(
                                     width=1.5,  # Line width
-                                    color="rgba(255, 200, 0, 0.2)",  # Line color
+                                    color="rgba(255, 200, 0, 0.15)",  # Line color
                                 ),
                                 name=f"Signal to {gateway_pos.name_of_gateway}",
                             )

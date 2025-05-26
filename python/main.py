@@ -48,8 +48,8 @@ def handle_message(sensors, gateways, msg, sensor_data, gateway_data, muting=Fal
     gateway_eui = msg['gateway'].replace(":", "")
 
     #the standard sensor is not known so location to 0,0
-    lat = 52.2394
-    lon = 6.8566
+    lat = 52.2394 + random.uniform(-0.0001, 0.0001)  # random latitude around campus
+    lon = 6.8566 + random.uniform(-0.0001, 0.0001)  # random longitude around campus
     known = False
 
     # check if device_euid is in the csv file
