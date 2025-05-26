@@ -39,6 +39,8 @@ class Mapper:
 
 
 
+
+
     def update(self, sensors, gateways):
         # in this function we update the sensors and gateways
         # (optimization possible, just use a pointer instead of a copy)
@@ -58,6 +60,8 @@ class Mapper:
             data.append({
                 "lat": lat,
                 "lon": lon,
+                "known_lat": s.get_known_lat(),
+                "known_lon": s.get_known_lon(),
                 "type": type,
                 "eui": s.get_sensor_id(),
                 "name": s.name_of_sensor if s.has_sensor_name() else "Unknown",
@@ -93,7 +97,7 @@ class Mapper:
         # Add a transparent circle below each point
         fig.update_traces(
             marker=dict(
-                size=8,  # Large size for glow
+                size=5,  # Large size for glow
                 color="white",  # Bright color for glow
                 opacity=0.2,  # Semi-transparent
                 allowoverlap=True,
@@ -109,13 +113,61 @@ class Mapper:
                 lon=df["lon"],
                 mode="markers",
                 marker=dict(
-                    size=15,
+                    size=10,
                     color="white",
                     opacity=0.05,
                     allowoverlap=True,
                 ),
             )
         )
+
+        # Add a layer for the points
+        for point_type in {"Sensor", "Gateway", "Unknown Sensor"}:
+            subdf = df[df["type"] == point_type]
+            size = 3
+            if point_type == "Sensor":
+                color = "pink"
+                fig.add_trace(
+                    dict(
+                        type="scattermapbox",
+                        lat=df["known_lat"],
+                        lon=df["known_lon"],
+                        mode="markers",
+                        marker=dict(
+                            size=3,
+                            color=color,
+                            opacity=0.9,
+                            allowoverlap=True,
+                        ),
+                        name="Actual Position Sensors",
+                        text=df["name"],
+                        hoverinfo="text",
+                    )
+                )
+                color = "lime"
+            elif point_type == "Gateway":
+                color = "aqua"
+                size = 5
+            elif point_type == "Unknown Sensor":
+                color = "orange"
+
+            fig.add_trace(
+                dict(
+                    type="scattermapbox",
+                    lat=subdf["lat"],
+                    lon=subdf["lon"],
+                    mode="markers",
+                    marker=dict(
+                        size=size,
+                        color=color,
+                        opacity=0.9,
+                        allowoverlap=True,
+                    ),
+                    name=point_type,
+                    text=subdf["name"],
+                    hoverinfo="text",
+                )
+            )
 
         # loop through all sensors
         for sensor in self.sensors:
@@ -149,33 +201,37 @@ class Mapper:
                             )
                         )
 
-        # Add a layer for the points
-        for point_type in {"Sensor", "Gateway", "Unknown Sensor"}:
-            subdf = df[df["type"] == point_type]
-            if point_type == "Sensor":
-                color = "lime"
-            elif point_type == "Gateway":
-                color = "aqua"
-            elif point_type == "Unknown Sensor":
-                color = "orange"
+            # unkown sensors, draw with orange lines
+            else:
+                # loop through all signals of the sensor
+                for signal in sensor.avg_signals:
 
-            fig.add_trace(
-                dict(
-                    type="scattermapbox",
-                    lat=subdf["lat"],
-                    lon=subdf["lon"],
-                    mode="markers",
-                    marker=dict(
-                        size=5,
-                        color=color,
-                        opacity=0.9,
-                        allowoverlap=True,
-                    ),
-                    name=point_type,
-                    text=subdf["name"],
-                    hoverinfo="text",
-                )
-            )
+                    # get the gateway eui > get the gateway position
+                    gateway = signal.eui_of_gateway
+                    gateway_pos = next((g for g in self.gateways if g.get_gateway_id() == gateway), None)
+                    if gateway_pos:
+                        # store all the coordinates of the line (2 points, 4 values)
+                        line_coordinates = {
+                            "lat": [sensor.get_lat(), gateway_pos.get_lat()],
+                            "lon": [sensor.get_lon(), gateway_pos.get_lon()]
+                        }
+
+                        # Add a line between the sensor and the gateway
+                        fig.add_trace(
+                            dict(
+                                type="scattermapbox",
+                                lat=line_coordinates["lat"],
+                                lon=line_coordinates["lon"],
+                                mode="lines",
+                                line=dict(
+                                    width=1.5,  # Line width
+                                    color="rgba(255, 200, 0, 0.2)",  # Line color
+                                ),
+                                name=f"Signal to {gateway_pos.name_of_gateway}",
+                            )
+                        )
+
+
         fig.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0})
         return fig
 
