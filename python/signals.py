@@ -60,19 +60,29 @@ class Sensor:
         #Array with average signal for each gateway from senor
         self.avg_signals = []
 
-    def rssi_model(slef, true_d, incomming_rssi):
+    def rssi_model(self, d, path_loss_exponent):
         """"
-            rssi_model calculates path loss exponent (n)
-            based on the true distance and the recieved rssi
-        """
-        return transmition_power - 10 * incomming_rssi * np.log10(true_d)
-
+                    rssi_model calculates RSSI based
+                    based on the true distance and n
+                """
+        return transmition_power - 10 * path_loss_exponent * np.log10(d)
 
     def get_lon(self):
         return self.lon
 
     def get_lat(self):
         return self.lat
+
+    def get_known_lon(self):
+        if self.known:
+            return self.known_lon
+        return self.lon
+
+    def get_known_lat(self):
+        if self.known:
+            return self.known_lat
+        return self.lat
+
 
     def xy_to_latlon(self, x, y, lat0_deg, lon0_deg):
         """"
@@ -115,12 +125,13 @@ class Sensor:
             #add the RSSI and True distance
             RSSIs.append(signal.RSSI)
             true_distances.append(geodesic((self.known_lat, self.known_lon), (signal.lat, signal.lon)).meters)
-
+            print(f'true distances: {true_distances[:5]}')
             #Fit the RSSI_model to the true distance and RSSI
-            params, _ = curve_fit(self.rssi_model, true_distances, RSSIs)
+            params, _ = curve_fit(self.rssi_model, true_distances, RSSIs, p0=[3])
 
             #Update n
             n = params[0]
+            print(f'updated n: {n}')
 
         # add signal to the raw signals
         self.raw_signals.append(signal)
