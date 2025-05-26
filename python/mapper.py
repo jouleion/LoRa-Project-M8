@@ -201,6 +201,30 @@ class Mapper:
                             )
                         )
 
+                #if there is a estimated position
+                if sensor.pos_is_estimated():
+                    line_coordinates = {
+                        "lat": [sensor.get_lat(), sensor.get_known_lat()],
+                        "lon": [sensor.get_lon(), sensor.get_known_lon()]
+                    }
+
+                    # Add a pink line between the actual sensor and the estimated sensor position
+                    fig.add_trace(
+                        dict(
+                            type="scattermapbox",
+                            lat=line_coordinates["lat"],
+                            lon=line_coordinates["lon"],
+                            mode="lines",
+                            line=dict(
+                                width=1.5,  # Line width
+                                color="rgba(255, 198, 208, 0.2)",  # Line color
+                            ),
+                            name=f"Difference between actual sensor and estimated senors",
+                        )
+                    )
+
+
+
             # unkown sensors, draw with orange lines
             else:
                 # loop through all signals of the sensor
