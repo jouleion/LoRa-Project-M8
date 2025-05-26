@@ -15,7 +15,7 @@ from geopy.distance import geodesic
 #Global parameters used for rssi based distance calculation
 #Should be global so all sensors can use the same information
 transmition_power = 14
-n = 3.0 #path loss exponent, tuneable range [2; 3.5]
+n = 5.6 #path loss exponent, tuneable range [2; 3.5]
 true_distances = []
 RSSIs = []
 

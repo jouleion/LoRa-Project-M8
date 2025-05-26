@@ -144,7 +144,7 @@ class Mapper:
                 color = "pink"
                 actual_pos_df = df[df["known_lat"].notnull() & df["known_lon"].notnull()]
                 name = df["name"]
-                print("name of sensor in mapper: ",  name)
+
 
                 fig.add_trace(
                     dict(
@@ -219,7 +219,7 @@ class Mapper:
                                     color="rgba(0, 255, 0, 0.2)",  # Line color
                                 ),
                                 name=f"Signal to {gateway_pos.name_of_gateway}",
-                                showlegend=False,  # Hide legend for these lines
+                                showlegend=True,
                             )
                         )
 
@@ -241,8 +241,8 @@ class Mapper:
                                 width=1.5,  # Line width
                                 color="rgba(255, 198, 208, 0.2)",  # Line color
                             ),
-                            name=f"Difference between actual sensor and estimated senors",
-                            showlegend=False,  # Hide legend for these lines
+                            name="Actual Position Sensors",
+                            showlegend=True,  # Hide legend for these lines
                         )
                     )
 
@@ -275,7 +275,7 @@ class Mapper:
                                     color="rgba(255, 200, 0, 0.15)",  # Line color
                                 ),
                                 name=f"Signal to {gateway_pos.name_of_gateway}",
-                                showlegend=False,  # Hide legend for these lines
+                                showlegend=True,  # Hide legend for these lines
                             )
                         )
 
