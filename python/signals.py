@@ -18,6 +18,8 @@ transmition_power = 14
 n = 3.0 #path loss exponent, tuneable range [2; 3.5]
 true_distances = []
 RSSIs = []
+
+
 class Signal:
     def __init__(self,  eui_of_gateway, RSSI, lon, lat,):
         self.eui_of_gateway = eui_of_gateway
@@ -32,6 +34,7 @@ class Signal:
 
 
     def distance_estimate(self):
+        # max is 14dB. recieved signal strength usually negative. look a the attenuation we can find the distance.
         return 10 ** ((transmition_power - self.RSSI) / (10 * n))
 
 class Sensor:
@@ -63,6 +66,8 @@ class Sensor:
             based on the true distance and the recieved rssi
         """
         return transmition_power - 10 * incomming_rssi * np.log10(true_d)
+
+
     def get_lon(self):
         return self.lon
 

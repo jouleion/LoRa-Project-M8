@@ -48,8 +48,8 @@ def handle_message(sensors, gateways, msg, sensor_data, gateway_data, muting=Fal
     gateway_eui = msg['gateway'].replace(":", "")
 
     #the standard sensor is not known so location to 0,0
-    lon = 0
-    lat = 0
+    lon = 52.2394
+    lat = 6.8566
     known = False
 
     # check if device_euid is in the csv file

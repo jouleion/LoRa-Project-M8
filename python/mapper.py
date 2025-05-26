@@ -122,7 +122,7 @@ class Mapper:
             if sensor.known:
 
                 # loop through all signals of the sensor
-                for signal in sensor.raw_signals:
+                for signal in sensor.avg_signals:
 
                     # get the gateway eui > get the gateway position
                     gateway = signal.eui_of_gateway
@@ -157,7 +157,7 @@ class Mapper:
             elif point_type == "Gateway":
                 color = "aqua"
             elif point_type == "Unknown Sensor":
-                color = "aquamarine"
+                color = "orange"
 
             fig.add_trace(
                 dict(
